@@ -15,16 +15,37 @@ const char apn[]      = "grupotesacom.claro.com.ar";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
+const char mqtt_ip[] = "10.25.1.152";
+const char port[] = "4099";
+
 const char client_id[]   = "IVR4oiZ62ymacQLSb6qo"; // aca se debe poner el id del device de tdata
 
 int sensorValue = 0;
-float currentSum = 0;
+float meanC = 0;
+float minC = 20;
+float maxC = 4;
 int currentCount = 0;
 float temperature = 0;
+float minTemperature = 0;
+float maxTemperature = 0;
 float voltage = 0;
-unsigned long myTime;
+unsigned long startTime;
 unsigned long currentTime;
 char str[7];
+
+float calculateTemperature(float input) {
+  return 6.25 * input - 45;
+}
+
+void updateMin(float input) {
+  if (input < minC)
+    minC = input;
+}
+
+void updateMax(float input) {
+  if (input > maxC)
+    maxC = input;
+}
 
 void setup() 
 {
@@ -42,31 +63,50 @@ void setup()
   SerialMon.println(" Opening MQTT service ");
   CreatePDPContext(apn, gprsUser,  gprsPass);
   ActivatePDPContext();
-  ConnectMQTTClient(client_id);
-  myTime = millis();
+  ConnectMQTTClient(client_id, mqtt_ip, port);
+  startTime = millis();
 }
 
 void loop() 
 {
+  delay(5000);
+
   currentTime = millis();
-  if(currentTime - myTime <= 15000) {
-    sensorValue = analogRead(AI0);
-    currentSum += (sensorValue/40.0);
-    if(sensorValue/40.0 < 18.0 || sensorValue/40.0 > 21.0)
-      SerialMon.println(currentSum/currentCount);
-    currentCount++;
-  }
-  if(currentTime - myTime > 15000) {
-    temperature = (float(currentSum/currentCount)*25/100)-60;
+  sensorValue = analogRead(AI0)/40;
+  updateMin(sensorValue);
+  updateMax(sensorValue);
+  meanC = (meanC * currentCount + sensorValue)/(currentCount + 1);
+  currentCount++;
+
+  SerialMon.println("\nCurrent meanC: ");
+  SerialMon.println(meanC);
+
+  SerialMon.println("\nCurrent minC: ");
+  SerialMon.println(minC);
+
+  SerialMon.println("\nCurrent maxC: ");
+  SerialMon.println(maxC);
+
+  if(currentTime - startTime > 30000) {
+    temperature = calculateTemperature(meanC);
     SerialMon.println("\nCurrent Mean: ");
-    SerialMon.println(currentSum/currentCount);
-    SerialMon.println("\nCurrent Count: ");
-    SerialMon.println(currentCount);
+    SerialMon.println(temperature);
+    
     dtostrf(temperature, 4, 2, str);
-    PublishData("Temperatura",str);
+    PublishData("Temperatura Promedio",str);
+
+    minTemperature = calculateTemperature(minC);
+    
+    dtostrf(minTemperature, 4, 2, str);
+    PublishData("Temperatura Mínima",str);
+
+    maxTemperature = calculateTemperature(maxC);
+    
+    dtostrf(maxTemperature, 4, 2, str);
+    PublishData("Temperatura Máxima",str);
+    
     currentCount = 0;
-    currentSum = 0;
-    myTime = millis();
+    startTime = millis();
   }
   
   //sensorValue = analogRead(VCCSENSE);
