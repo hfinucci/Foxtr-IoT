@@ -20,7 +20,10 @@ const char port[] = "4099";
 
 const char client_id[]   = "IVR4oiZ62ymacQLSb6qo"; // aca se debe poner el id del device de tdata
 
+int doorState = 0;
+int lastDoorState = 0;
 int sensorValue = 0;
+
 float meanC = 0;
 float minC = 20;
 float maxC = 4;
@@ -65,12 +68,11 @@ void setup()
   ActivatePDPContext();
   ConnectMQTTClient(client_id, mqtt_ip, port);
   startTime = millis();
+
+  pinMode(DI1, INPUT_PULLUP);
 }
 
-void loop() 
-{
-  delay(5000);
-
+void readTemperature() {
   currentTime = millis();
   sensorValue = analogRead(AI0)/40;
   updateMin(sensorValue);
@@ -106,8 +108,31 @@ void loop()
     PublishData("Temperatura Máxima",str);
     
     currentCount = 0;
-    startTime = millis();
   }
+}
+
+void loop() 
+{
+  delay(5000);
+
+  currentTime = millis();
+  doorState = digitalRead(DI1);
+
+  if (doorState != lastDoorState) {
+    SerialMon.println("\nCurrent sensorValue: ");
+    SerialMon.println(doorState);
+
+    if (doorState == 0)
+      strcpy(str, "CERRADO");
+    else 
+      strcpy(str, "ABIERTO");
+    PublishData("Estado puerta",str);
+
+    lastDoorState = doorState;
+  }
+  
+  startTime = millis();
+}
   
   //sensorValue = analogRead(VCCSENSE);
   //voltage = (float(sensorValue)*(25*11)/10000);
@@ -115,4 +140,3 @@ void loop()
   //PublishData("Temperatura",str);
   //dtostrf(voltage, 4, 2, str);
   //PublishData("Tension",str);
-}
