@@ -23,6 +23,7 @@ const char client_id[]   = "IVR4oiZ62ymacQLSb6qo"; // aca se debe poner el id de
 int doorState = 0;
 int lastDoorState = 0;
 int sensorValue = 0;
+int carbonDioxideSensor = 0;
 
 float meanC = 0;
 float minC = 20;
@@ -35,6 +36,7 @@ float voltage = 0;
 unsigned long startTime;
 unsigned long currentTime;
 char str[7];
+char strDoor[7];
 
 float calculateTemperature(float input) {
   return 6.25 * input - 45;
@@ -70,6 +72,7 @@ void setup()
   startTime = millis();
 
   pinMode(DI1, INPUT_PULLUP);
+  pinMode(DI4, INPUT_PULLUP);
 }
 
 void readTemperature() {
@@ -95,27 +98,29 @@ void readTemperature() {
     SerialMon.println(temperature);
     
     dtostrf(temperature, 4, 2, str);
-    PublishData("Temperatura Promedio",str);
+    PublishData("temp_av",str);
 
     minTemperature = calculateTemperature(minC);
     
     dtostrf(minTemperature, 4, 2, str);
-    PublishData("Temperatura Mínima",str);
+    PublishData("temp_min",str);
 
     maxTemperature = calculateTemperature(maxC);
     
     dtostrf(maxTemperature, 4, 2, str);
-    PublishData("Temperatura Máxima",str);
+    PublishData("temp_max",str);
     
     currentCount = 0;
+    startTime = millis();
   }
+
 }
 
 void loop() 
 {
   delay(5000);
 
-  currentTime = millis();
+  // currentTime = millis();
   doorState = digitalRead(DI1);
 
   if (doorState != lastDoorState) {
@@ -123,20 +128,15 @@ void loop()
     SerialMon.println(doorState);
 
     if (doorState == 0)
-      strcpy(str, "CERRADO");
+      strcpy(strDoor, "CERRADO");
     else 
-      strcpy(str, "ABIERTO");
-    PublishData("Estado puerta",str);
+      strcpy(strDoor, "ABIERTO");
+    PublishData("door",strDoor);
 
     lastDoorState = doorState;
+    delay(2000);
   }
+
+  readTemperature();
   
-  startTime = millis();
 }
-  
-  //sensorValue = analogRead(VCCSENSE);
-  //voltage = (float(sensorValue)*(25*11)/10000);
-  //dtostrf(temperature, 4, 2, str);
-  //PublishData("Temperatura",str);
-  //dtostrf(voltage, 4, 2, str);
-  //PublishData("Tension",str);
