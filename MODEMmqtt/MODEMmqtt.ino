@@ -275,6 +275,12 @@ void readTemperature() {
     Serial.println(temperature);
     
     dtostrf(temperature, 4, 2, str);
+    if (temperature > 60) {
+      strcpy(strConcentration, "ALTO");
+      PublishData("co2",strConcentration);
+      Serial.print("co2:");
+      Serial.println("1");
+    }
     // PublishData("temp_av",str);
 
     // minTemperature = calculateTemperature(minC);
