@@ -105,7 +105,6 @@ int noiseIndex = 0;
 const double epsilon = 0.5;
 const double epsilon_h = 1;
 
-// Armar relacion entre CO y CO2 con temperatura
 int doorState = 0;
 int lastDoorState = 0;
 int sensorValue = 0;
@@ -145,7 +144,6 @@ double calculateNoise(double input) {
   return rand() % (int)((input + epsilon_h) - (input - epsilon_h) + 1) + (input - epsilon_h);
 }
 
-// Fix maximum temperature lecture
 float calculateTemperature(float input) {
   return 6.25 * input - 45;
 }
@@ -161,18 +159,8 @@ void updateMax(float input) {
 }
 
 void simulateConcentration(char* name, int offset, long* time, int* concentrationState) {
-  // if (strcmp(name, "co") == 0) {
-  //   SerialMon.println("\nCo: ");
-  //   SerialMon.println(currentTime - *time);
-  //   SerialMon.println(40000 + offset);
-  //   SerialMon.println(60000 + offset);
-  //   SerialMon.println(100000 + offset);
-  //   SerialMon.println(500000 + offset);
-  // }
   
   if (currentTime - *time < (40000 + offset)) {
-    // SerialMon.println("\nHolis");
-    // SerialMon.println(name);
     if (*concentrationState == 1) {
       Serial.print(name);
       Serial.print(":");
@@ -217,8 +205,7 @@ void simulateConcentration(char* name, int offset, long* time, int* concentratio
   }
 }
 
-void setup() 
-{
+void setup() {
   SerialMon.begin(115200);
   SerialMon.println(F("***********************************************************"));
   SerialMon.println(F(" Initializing Modem"));
@@ -265,7 +252,6 @@ void readTemperature() {
       
       Serial.print("humidity:");
       Serial.println(humValue);
-      // PublishData("temp_av",str);
     }
     lastTemperature = temperature;
   }
@@ -281,17 +267,6 @@ void readTemperature() {
       Serial.print("co2:");
       Serial.println("1");
     }
-    // PublishData("temp_av",str);
-
-    // minTemperature = calculateTemperature(minC);
-    
-    // dtostrf(minTemperature, 4, 2, str);
-    // PublishData("temp_min",str);
-
-    // maxTemperature = calculateTemperature(maxC);
-    
-    // dtostrf(maxTemperature, 4, 2, str);
-    // PublishData("temp_max",str);
 
     humValue = calculateHumidity(humidity[humIndex % 37]);
     dtostrf(humValue, 4, 2, strHum);
@@ -299,7 +274,6 @@ void readTemperature() {
     Serial.print("humidity:");
     Serial.println(humValue);
 
-    // PublishData("humidity",strHum);
     PublishDataExtended("temp_av", str, "humidity", strHum);
 
     noiseValue = calculateNoise(dbs[noiseIndex % 37]);
@@ -323,19 +297,13 @@ void readTemperature() {
     currentCount = 0;
     startTime = millis();
   }
-
 }
 
-void loop() 
-{
 
-  // currentTime = millis();
+void loop() {
   doorState = digitalRead(DI1);
 
   if (doorState != lastDoorState) {
-    // SerialMon.println("\nCurrent sensorValue: ");
-    // SerialMon.println(doorState);
-
     if (doorState == 0)
       strcpy(strDoor, "CERRADO");
     else 
@@ -348,11 +316,8 @@ void loop()
 
     lastDoorState = doorState;
   }
-  // Serial.print("Variable:");
-  // Serial.println(500);
 
   readTemperature();
   simulateConcentration("co2", 0, &co2Time, &co2State);
   simulateConcentration("co", 10000, &coTime, &coState);
-  
 }
